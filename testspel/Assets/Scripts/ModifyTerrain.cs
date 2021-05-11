@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor.Tilemaps;
 using UnityEngine.Tilemaps;
 
 public class ModifyTerrain : MonoBehaviour
@@ -23,6 +20,7 @@ public class ModifyTerrain : MonoBehaviour
     float timeUntilBreak = 1.0f;
     Vector3Int clickedTile;
     Vector3Int selectedTile;
+    Vector3Int hoveredTile;
     bool breaking = false;
 
     bool buttonPressed = false;
@@ -42,55 +40,47 @@ public class ModifyTerrain : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (selectedTile != GetSelectedTile(groundMap))
+        hoveredTile = GetSelectedTile(groundMap);
+        if (selectedTile != hoveredTile)
         {
             overlayMap.SetTile(selectedTile, null);
-            selectedTile = GetSelectedTile(groundMap);
-            if (groundMap.GetTile(selectedTile) != null) overlayMap.SetTile(selectedTile, markerTile);
-        }
-
-
-        if (inventoryManager.itemSelected == InventoryManager.Item.PICKAXE)
-        {
-
-            if (Input.GetMouseButtonDown(0))
+            selectedTile = hoveredTile;
+            if (groundMap.GetTile(selectedTile) != null)
             {
-                buttonPressed = true;
-                clickedTile = selectedTile;
-                if (groundMap.GetTile(clickedTile) != null) breaking = true;
-            }
-
-            if (Input.GetMouseButtonUp(0)) buttonPressed = false;
-        } else if(inventoryManager.itemSelected == InventoryManager.Item.DRILL) {
-            if(Input.GetMouseButtonDown(0)) {
-                breaking = false;
-                buttonPressed = false;
-                groundMap.SetTile(selectedTile, null);
-                overlayMap.SetTile(selectedTile, null);
-                if(oreMap.GetTile(selectedTile) != null) {
-                    oreMap.SetTile(selectedTile, null);
-                    ironCounter.IronCount += 1;
-                }
+                overlayMap.SetTile(selectedTile, markerTile);
             }
         }
 
-
-        if (Input.GetMouseButtonDown(1))
+        switch (inventoryManager.itemSelected)
         {
-            groundMap.SetTile(selectedTile, buildingTile);
-        }
-    }
-
-    void FixedUpdate()
-    {
-        if (inventoryManager.itemSelected == InventoryManager.Item.PICKAXE)
-        {
-            if (breaking)
-            {
-                if (buttonPressed)
+            case InventoryManager.Item.PICKAXE:
+                if (Input.GetMouseButtonDown(0))
                 {
-                    if (clickedTile == GetSelectedTile(groundMap))
+                    if (groundMap.GetTile(selectedTile) != null)
                     {
+                        buttonPressed = true;
+                        clickedTile = selectedTile;
+                        breaking = true;
+                    }
+                }
+                else if (Input.GetMouseButtonUp(0))
+                {
+                    buttonPressed = false;
+                }
+
+                if (breaking)
+                {
+                    if (buttonPressed)
+                    {
+                        if (clickedTile != hoveredTile)
+                        {
+                            timeUntilBreak = 1.0f;
+                            overlayMap.SetTile(clickedTile, null);
+                            if (groundMap.GetTile(hoveredTile) != null)
+                            {
+                                clickedTile = selectedTile;
+                            }
+                        }
                         if (timeUntilBreak > 0)
                         {
                             timeUntilBreak -= Time.deltaTime;
@@ -117,21 +107,99 @@ public class ModifyTerrain : MonoBehaviour
                             timeUntilBreak = 1.0f;
                             breaking = false;
                         }
+
                     }
                     else
                     {
-                        timeUntilBreak = 1.0f;
                         overlayMap.SetTile(clickedTile, null);
-                        clickedTile = GetSelectedTile(groundMap);
+                        timeUntilBreak = 1.0f;
+                        breaking = false;
                     }
                 }
-                else
+                break;
+            case InventoryManager.Item.DRILL:
+                if (Input.GetMouseButtonDown(0))
                 {
-                    overlayMap.SetTile(clickedTile, null);
-                    timeUntilBreak = 1.0f;
                     breaking = false;
+                    buttonPressed = false;
+                    groundMap.SetTile(selectedTile, null);
+                    overlayMap.SetTile(selectedTile, null);
+                    if (oreMap.GetTile(selectedTile) != null)
+                    {
+                        oreMap.SetTile(selectedTile, null);
+                        ironCounter.IronCount += 1;
+                    }
                 }
-            }
+                break;
+            case InventoryManager.Item.DYNAMITE:
+                break;
+        }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            groundMap.SetTile(selectedTile, buildingTile);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        switch (inventoryManager.itemSelected)
+        {
+            case InventoryManager.Item.PICKAXE:
+                if (breaking)
+                {
+                    if (buttonPressed)
+                    {
+                        if (clickedTile == GetSelectedTile(groundMap))
+                        {
+                            if (timeUntilBreak > 0)
+                            {
+                                timeUntilBreak -= Time.deltaTime;
+
+                                if (timeUntilBreak > (float)8 / 9) overlayMap.SetTile(clickedTile, stage1);
+                                else if (timeUntilBreak > (float)7 / 9) overlayMap.SetTile(clickedTile, stage2);
+                                else if (timeUntilBreak > (float)6 / 9) overlayMap.SetTile(clickedTile, stage3);
+                                else if (timeUntilBreak > (float)5 / 9) overlayMap.SetTile(clickedTile, stage4);
+                                else if (timeUntilBreak > (float)4 / 9) overlayMap.SetTile(clickedTile, stage5);
+                                else if (timeUntilBreak > (float)3 / 9) overlayMap.SetTile(clickedTile, stage6);
+                                else if (timeUntilBreak > (float)2 / 9) overlayMap.SetTile(clickedTile, stage7);
+                                else if (timeUntilBreak > (float)1 / 9) overlayMap.SetTile(clickedTile, stage8);
+                                else overlayMap.SetTile(clickedTile, stage9);
+                            }
+                            else
+                            {
+                                if (oreMap.GetTile(clickedTile) != null)
+                                {
+                                    oreMap.SetTile(clickedTile, null);
+                                    ironCounter.IronCount += 1;
+                                }
+                                overlayMap.SetTile(clickedTile, null);
+                                groundMap.SetTile(clickedTile, null);
+                                timeUntilBreak = 1.0f;
+                                breaking = false;
+                            }
+                        }
+                        else
+                        {
+                            timeUntilBreak = 1.0f;
+                            overlayMap.SetTile(clickedTile, null);
+                            clickedTile = GetSelectedTile(groundMap);
+                        }
+                    }
+                    else
+                    {
+                        overlayMap.SetTile(clickedTile, null);
+                        timeUntilBreak = 1.0f;
+                        breaking = false;
+                    }
+                }
+                break;
+            case InventoryManager.Item.DRILL:
+                break;
+            case InventoryManager.Item.DYNAMITE:
+                break;
+            default:
+                break;
         }
     }
 
