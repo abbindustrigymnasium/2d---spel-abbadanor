@@ -61,9 +61,16 @@ public class ModifyTerrain : MonoBehaviour
             }
 
             if (Input.GetMouseButtonUp(0)) buttonPressed = false;
-        } else if(inventoryManager.itemSelected == InventoryManager.Item.DYNAMITE) {
+        } else if(inventoryManager.itemSelected == InventoryManager.Item.DRILL) {
             if(Input.GetMouseButtonDown(0)) {
-
+                breaking = false;
+                buttonPressed = false;
+                groundMap.SetTile(selectedTile, null);
+                overlayMap.SetTile(selectedTile, null);
+                if(oreMap.GetTile(selectedTile) != null) {
+                    oreMap.SetTile(selectedTile, null);
+                    ironCounter.IronCount += 1;
+                }
             }
         }
 

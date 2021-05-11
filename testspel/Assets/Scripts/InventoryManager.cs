@@ -10,8 +10,8 @@ public class InventoryManager : MonoBehaviour
     public GameObject slotObject2;
     public GameObject slotObject3;
 
-    public bool drillAvailable = true;
-    public bool dynamiteAvailable = false;
+    public bool drillAvailable;
+    public bool dynamiteAvailable;
     Button button1;
     Button button2;
     Button button3;
@@ -20,15 +20,25 @@ public class InventoryManager : MonoBehaviour
     ColorBlock color2;
     ColorBlock color3;
 
+    IronCounter ironCounter;
+    GameObject buyMenu;
+
     public enum Item {
         PICKAXE,
         DRILL,
         DYNAMITE
     }
-    public Item itemSelected = Item.PICKAXE;
+    public Item itemSelected;
     void Start()
     {
-        
+        itemSelected = Item.PICKAXE;
+        drillAvailable = false;
+        dynamiteAvailable = false;
+
+        GameObject text = GameObject.Find("Text");
+        buyMenu = GameObject.Find("BuyMenu");
+        buyMenu.SetActive(false);
+        ironCounter = text.GetComponent<IronCounter>();
     }
 
     void Awake() {
@@ -45,6 +55,7 @@ public class InventoryManager : MonoBehaviour
     void Update()
     {
         if(itemSelected == Item.DRILL) {
+
             color2.normalColor = Color.blue;
             color1.normalColor = Color.white;
             color3.normalColor = dynamiteAvailable ? Color.white : Color.gray;
@@ -60,5 +71,21 @@ public class InventoryManager : MonoBehaviour
         button1.colors = color1;
         button2.colors = color2;
         button3.colors = color3;
+
+        if(Input.GetKeyDown(KeyCode.Alpha1)) {
+            itemSelected = Item.PICKAXE;
+        }
+        if(Input.GetKeyDown(KeyCode.Alpha2)) {
+            if(drillAvailable) {
+                itemSelected = Item.DRILL;
+            } else {
+                if(ironCounter.IronCount >= 10) {
+                    buyMenu.SetActive(true);
+                }
+            }
+        }
+        if(Input.GetKeyDown(KeyCode.Alpha3) && dynamiteAvailable) {
+            itemSelected = Item.DYNAMITE;
+        }
     }
 }

@@ -11,7 +11,7 @@ public class IronCounter : MonoBehaviour
 public Text text;
     void Start()
     {
-        
+        IronCount = 0;
     }
 
     // Update is called once per frame
