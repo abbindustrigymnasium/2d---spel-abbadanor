@@ -1,217 +1,176 @@
-        using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEditor.Tilemaps;
 
 public class ModifyTerrain : MonoBehaviour
 {
-    public Tilemap groundMap;
+    public Tilemap earthMap;
     public Tilemap oreMap;
     public Tilemap overlayMap;
-    public Tile markerTile;
-    public Tile buildingTile;
-    public Tile stage1;
-    public Tile stage2;
-    public Tile stage3;
-    public Tile stage4;
-    public Tile stage5;
-    public Tile stage6;
-    public Tile stage7;
-    public Tile stage8;
-    public Tile stage9;
-    float timeUntilBreak = 1.0f;
-    Vector3Int clickedTile;
-    Vector3Int selectedTile;
-    Vector3Int hoveredTile;
-    bool breaking = false;
+    public Tile selectorTile;
+    public GameObject dynamite;
+    public int maxDst;
+    public float breakTimePickaxe;
+    public float breakTimeDrill;
+    public float explosionTime;
 
-    bool buttonPressed = false;
-    IronCounter ironCounter;
+    Vector3Int defaultTilePos = new Vector3Int(-1, -1, -1);
+    Vector3Int selectedTilePos;
+    Vector3Int clickedTilePos;
+
+    bool mouseBtnDown = false;
+    float timeUntilBreak;
+    List<Tile> miningTiles = new List<Tile>();
     InventoryManager inventoryManager;
-    // Start is called before the first frame update
+
     void Start()
     {
-        selectedTile = GetSelectedTile(groundMap);
-        if (groundMap.GetTile(selectedTile) != null) overlayMap.SetTile(selectedTile, markerTile);
-        GameObject text = GameObject.Find("Text");
-        ironCounter = text.GetComponent<IronCounter>();
+        selectedTilePos = defaultTilePos;
+        clickedTilePos = defaultTilePos;
+        timeUntilBreak = breakTimePickaxe;
+
+        for (int i = 8; i >= 0; i--)
+        {
+            miningTiles.Add(Resources.Load<Tile>("Palette/overlay_tiles/overlay_tileset_" + i.ToString()));
+        }
+
         GameObject hotbar = GameObject.Find("Hotbar");
         inventoryManager = hotbar.GetComponent<InventoryManager>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        hoveredTile = GetSelectedTile(groundMap);
-        if (selectedTile != hoveredTile)
+        Vector3Int hoveredTilePosGrid = GetSelectedTile(earthMap);
+        TileBase hoveredTile = earthMap.GetTile(hoveredTilePosGrid);
+        if (hoveredTile == null && selectedTilePos != defaultTilePos)
         {
-            overlayMap.SetTile(selectedTile, null);
-            selectedTile = hoveredTile;
-            if (groundMap.GetTile(selectedTile) != null)
+            overlayMap.SetTile(selectedTilePos, null);
+            selectedTilePos = defaultTilePos;
+        }
+        else if (hoveredTilePosGrid != selectedTilePos && hoveredTile  != null)
+        {
+            overlayMap.SetTile(selectedTilePos, null);
+            float dst = Vector3.Distance(GameObject.FindGameObjectWithTag("Player").transform.position, earthMap.CellToWorld(hoveredTilePosGrid));
+            if (dst <= maxDst)
             {
-                overlayMap.SetTile(selectedTile, markerTile);
+                overlayMap.SetTile(hoveredTilePosGrid, selectorTile);
+                selectedTilePos = hoveredTilePosGrid;
+            }
+            else
+            {
+                selectedTilePos = defaultTilePos;
             }
         }
 
-        switch (inventoryManager.itemSelected)
+        if (Input.GetMouseButtonDown(0))
         {
-            case InventoryManager.Item.PICKAXE:
-                if (Input.GetMouseButtonDown(0))
+            mouseBtnDown = true;
+            if(inventoryManager.itemSelected == InventoryManager.Item.DYNAMITE)
+            {
+                if(selectedTilePos != defaultTilePos)
                 {
-                    if (groundMap.GetTile(selectedTile) != null)
-                    {
-                        buttonPressed = true;
-                        clickedTile = selectedTile;
-                        breaking = true;
-                    }
+                    Vector3 explodePlayerPos = GameObject.FindGameObjectWithTag("Player").transform.position;
+                    Vector3 explodeTargetPos = earthMap.CellToWorld(hoveredTilePosGrid);
+                    GameObject dyn = Instantiate(dynamite, explodePlayerPos, Quaternion.identity);
+                    Explode dynamiteScript = dyn.GetComponent<Explode>();
+                    dynamiteScript.throwLocation = explodePlayerPos;
+                    dynamiteScript.targetLocation = explodeTargetPos;
                 }
-                else if (Input.GetMouseButtonUp(0))
-                {
-                    buttonPressed = false;
-                }
+            }
+        }
 
-                if (breaking)
+        if (Input.GetMouseButtonUp(0))
+        {
+            mouseBtnDown = false;
+        }
+
+        /*  TODO:
+            Add mousebtn hold functionality
+            Add distance sensitivity
+        */  
+        if(Input.GetMouseButtonDown(1))
+        {
+            if(hoveredTile == null)
+            {
+                earthMap.SetTile(hoveredTilePosGrid, Resources.Load<Tile>("Palette/ground_tiles/tileset_18"));
+            }
+        }
+
+        if(inventoryManager.itemSelected != InventoryManager.Item.DYNAMITE)
+        {
+            if (mouseBtnDown)
+            {
+                if (selectedTilePos != defaultTilePos)
                 {
-                    if (buttonPressed)
+                    if (clickedTilePos == selectedTilePos)
                     {
-                        if (clickedTile != hoveredTile)
-                        {
-                            timeUntilBreak = 1.0f;
-                            overlayMap.SetTile(clickedTile, null);
-                            if (groundMap.GetTile(hoveredTile) != null)
-                            {
-                                clickedTile = selectedTile;
-                            }
-                        }
                         if (timeUntilBreak > 0)
                         {
-                            timeUntilBreak -= Time.deltaTime;
-
-                            if (timeUntilBreak > (float)8 / 9) overlayMap.SetTile(clickedTile, stage1);
-                            else if (timeUntilBreak > (float)7 / 9) overlayMap.SetTile(clickedTile, stage2);
-                            else if (timeUntilBreak > (float)6 / 9) overlayMap.SetTile(clickedTile, stage3);
-                            else if (timeUntilBreak > (float)5 / 9) overlayMap.SetTile(clickedTile, stage4);
-                            else if (timeUntilBreak > (float)4 / 9) overlayMap.SetTile(clickedTile, stage5);
-                            else if (timeUntilBreak > (float)3 / 9) overlayMap.SetTile(clickedTile, stage6);
-                            else if (timeUntilBreak > (float)2 / 9) overlayMap.SetTile(clickedTile, stage7);
-                            else if (timeUntilBreak > (float)1 / 9) overlayMap.SetTile(clickedTile, stage8);
-                            else overlayMap.SetTile(clickedTile, stage9);
+                            timeUntilBreak -= Time.deltaTime; //
+                            if(inventoryManager.itemSelected == InventoryManager.Item.PICKAXE) overlayMap.SetTile(clickedTilePos, GetMiningStage(breakTimePickaxe));
+                            else overlayMap.SetTile(clickedTilePos, GetMiningStage(breakTimeDrill));
                         }
                         else
                         {
-                            if (oreMap.GetTile(clickedTile) != null)
-                            {
-                                oreMap.SetTile(clickedTile, null);
-                                ironCounter.IronCount += 1;
-                            }
-                            overlayMap.SetTile(clickedTile, null);
-                            groundMap.SetTile(clickedTile, null);
-                            timeUntilBreak = 1.0f;
-                            breaking = false;
-                        }
-
-                    }
-                    else
-                    {
-                        overlayMap.SetTile(clickedTile, null);
-                        timeUntilBreak = 1.0f;
-                        breaking = false;
-                    }
-                }
-                break;
-            case InventoryManager.Item.DRILL:
-                if (Input.GetMouseButtonDown(0))
-                {
-                    breaking = false;
-                    buttonPressed = false;
-                    groundMap.SetTile(selectedTile, null);
-                    overlayMap.SetTile(selectedTile, null);
-                    if (oreMap.GetTile(selectedTile) != null)
-                    {
-                        oreMap.SetTile(selectedTile, null);
-                        ironCounter.IronCount += 1;
-                    }
-                }
-                break;
-            case InventoryManager.Item.DYNAMITE:
-                break;
-        }
-
-        if (Input.GetMouseButtonDown(1))
-        {
-            groundMap.SetTile(selectedTile, buildingTile);
-        }
-    }
-
-    void FixedUpdate()
-    {
-        switch (inventoryManager.itemSelected)
-        {
-            case InventoryManager.Item.PICKAXE:
-                if (breaking)
-                {
-                    if (buttonPressed)
-                    {
-                        if (clickedTile == GetSelectedTile(groundMap))
-                        {
-                            if (timeUntilBreak > 0)
-                            {
-                                timeUntilBreak -= Time.deltaTime;
-
-                                if (timeUntilBreak > (float)8 / 9) overlayMap.SetTile(clickedTile, stage1);
-                                else if (timeUntilBreak > (float)7 / 9) overlayMap.SetTile(clickedTile, stage2);
-                                else if (timeUntilBreak > (float)6 / 9) overlayMap.SetTile(clickedTile, stage3);
-                                else if (timeUntilBreak > (float)5 / 9) overlayMap.SetTile(clickedTile, stage4);
-                                else if (timeUntilBreak > (float)4 / 9) overlayMap.SetTile(clickedTile, stage5);
-                                else if (timeUntilBreak > (float)3 / 9) overlayMap.SetTile(clickedTile, stage6);
-                                else if (timeUntilBreak > (float)2 / 9) overlayMap.SetTile(clickedTile, stage7);
-                                else if (timeUntilBreak > (float)1 / 9) overlayMap.SetTile(clickedTile, stage8);
-                                else overlayMap.SetTile(clickedTile, stage9);
-                            }
-                            else
-                            {
-                                if (oreMap.GetTile(clickedTile) != null)
-                                {
-                                    oreMap.SetTile(clickedTile, null);
-                                    ironCounter.IronCount += 1;
-                                }
-                                overlayMap.SetTile(clickedTile, null);
-                                groundMap.SetTile(clickedTile, null);
-                                timeUntilBreak = 1.0f;
-                                breaking = false;
-                            }
-                        }
-                        else
-                        {
-                            timeUntilBreak = 1.0f;
-                            overlayMap.SetTile(clickedTile, null);
-                            clickedTile = GetSelectedTile(groundMap);
+                            if (inventoryManager.itemSelected == InventoryManager.Item.PICKAXE) timeUntilBreak = breakTimePickaxe;
+                            else timeUntilBreak = breakTimeDrill;
+                            overlayMap.SetTile(clickedTilePos, null);
+                            DestroyTile(clickedTilePos);
                         }
                     }
                     else
                     {
-                        overlayMap.SetTile(clickedTile, null);
-                        timeUntilBreak = 1.0f;
-                        breaking = false;
+                        overlayMap.SetTile(clickedTilePos, null);
+                        clickedTilePos = selectedTilePos;
                     }
                 }
-                break;
-            case InventoryManager.Item.DRILL:
-                break;
-            case InventoryManager.Item.DYNAMITE:
-                break;
-            default:
-                break;
-        }
-    }
 
+            }
+        }
+        
+    }
     Vector3Int GetSelectedTile(Tilemap tm)
     {
         return tm.WorldToCell(Camera.main.ScreenToWorldPoint(Input.mousePosition));
     }
-    /* void Update() {
-        if(Input.GetMouseButtonDown(0))
+
+    Tile GetMiningStage(float breakTime)
+    {
+        int stage = Mathf.RoundToInt(9 * (timeUntilBreak / breakTime)) - 1;
+        stage = Mathf.Clamp(stage, 0, 8);
+        return miningTiles[stage];
+    }
+
+    public void Explode(Vector3 position, int radius)
+    {
+        Vector3Int explodedTilePos = earthMap.WorldToCell(position);
+        for (int x = explodedTilePos.x - radius; x <= explodedTilePos.x + radius; x++)
+        {
+            for (int y = explodedTilePos.y - radius; y <= explodedTilePos.y + radius; y++)
             {
-                clickedTile = groundMap.WorldToCell(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-                Debug.Log(groundMap.GetTile(clickedTile));
-            }
-    } */
+                Vector3Int p = new Vector3Int(x, y, explodedTilePos.z);
+                if (inCircle(p, explodedTilePos, 2.5f)) DestroyTile(p);            }
+        }
+    }
+
+    bool inCircle(Vector3Int pInt, Vector3Int mInt, float radius)
+    {
+        Vector3 p = pInt;
+        Vector3 m = mInt;
+
+        float dst = Vector3.Distance(p, m);
+        return dst < radius;
+    }
+
+    void DestroyTile(Vector3Int p)
+    {
+        earthMap.SetTile(p, null);
+        if(oreMap.GetTile(p) != null)
+        {
+            IronCounter.IronCount += 1;
+            oreMap.SetTile(p, null);
+        }
+    }
 }

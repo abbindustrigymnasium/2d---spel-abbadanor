@@ -18,9 +18,6 @@ public class InventoryManager : MonoBehaviour
     ColorBlock color2;
     ColorBlock color3;
 
-    IronCounter ironCounter;
-    GameObject buyMenu;
-
     public enum Item
     {
         PICKAXE,
@@ -34,10 +31,7 @@ public class InventoryManager : MonoBehaviour
         drillAvailable = false;
         dynamiteAvailable = false;
 
-        GameObject text = GameObject.Find("Text");
-        buyMenu = GameObject.Find("BuyMenu");
         //buyMenu.SetActive(false);
-        ironCounter = text.GetComponent<IronCounter>();
 
         button1 = slotObject1.GetComponent<Toggle>();
         button2 = slotObject2.GetComponent<Toggle>();
@@ -84,10 +78,10 @@ public class InventoryManager : MonoBehaviour
             {
                 itemSelected = Item.DRILL;
             }
-            else if (ironCounter.IronCount >= 10)
+            else if (IronCounter.IronCount >= 10)
             {
                 drillAvailable = true;
-                ironCounter.IronCount -= 10;
+                IronCounter.IronCount -= 10;
                 itemSelected = Item.DRILL;
             }
         }
@@ -97,10 +91,10 @@ public class InventoryManager : MonoBehaviour
             {
                 itemSelected = Item.DYNAMITE;
             }
-            else if (ironCounter.IronCount >= 20)
+            else if (IronCounter.IronCount >= 20)
             {
                 dynamiteAvailable = true;
-                ironCounter.IronCount -= 20;
+                IronCounter.IronCount -= 20;
                 itemSelected = Item.DYNAMITE;
             }
         }

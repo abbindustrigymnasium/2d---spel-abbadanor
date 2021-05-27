@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class BuyItem : MonoBehaviour
 {
-    GameObject buyMenu;
+    /*GameObject buyMenu;
     IronCounter ironCounter;
     InventoryManager inventoryManager;
     // Start is called before the first frame update
@@ -34,5 +34,5 @@ public class BuyItem : MonoBehaviour
 
     public void ClickedNo() {
         buyMenu.SetActive(false);
-    }
+    }*/
 }
